@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortune Penguin - Slot</title>
+    <link rel="icon" type="image/jpeg" href="ICON.jpg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Esconde scrollbar */
+        ::-webkit-scrollbar { display: none; }
+        
+        /* Animação do botão girar */
+        .spin-btn-anim {
+            animation: pulse-green 1.5s infinite;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        /* Efeito de desfoque ao girar */
+        .spinning {
+            animation: slot-blur 0.1s infinite;
+        }
+        @keyframes slot-blur {
+            0% { transform: translateY(-5px); filter: blur(2px); }
+            50% { transform: translateY(5px); filter: blur(2px); }
+            100% { transform: translateY(0); filter: blur(0); }
+        }
+        
+        .slot-cell {
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
+        .win-anim {
+            animation: win-pop 0.5s ease-out alternate 4;
+            background-color: rgba(255, 215, 0, 0.3) !important;
+            border: 2px solid #ffcc00 !important;
+        }
+        @keyframes win-pop {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+
+<body class="text-white flex justify-center items-center min-h-screen font-sans bg-cover bg-center bg-fixed" style="background-image: url('fundo-desktop.jpg');">
+
+    <!-- Container Mobile Ajustado -->
+    <div class="w-full max-w-[414px] bg-[#700d0d] relative overflow-hidden flex flex-col h-screen justify-between shadow-2xl">
+        
+        <!-- TOP SECTION: Header + Avisos + Banner -->
+        <div class="w-full flex flex-col shrink-0">
+            <!-- HEADER (Voltar e Saldo) -->
+            <header class="flex justify-between items-center px-4 py-2 bg-black/60 border-b border-yellow-600/40 z-20">
+                <a href="index.html" class="text-xs text-[#ffcc00] font-bold px-2.5 py-1 border border-yellow-600/50 rounded bg-[#3a0a0a] hover:bg-red-950 transition flex items-center gap-1">
+                    &larr; Voltar
+                </a>
+                <div class="flex items-center gap-2 bg-[#2a0505] px-3 py-1 rounded-full border border-yellow-500/50 shadow-inner">
+                    <span class="text-[10px] text-gray-300 font-bold">R$</span>
+                    <span id="game-balance" class="text-[#ffcc00] font-black text-sm">0,00</span>
+                </div>
+            </header>
+
+            <!-- PAINEL EDUCACIONAL -->
+            <div class="bg-black/80 px-2 py-1 text-center border-b border-red-800/80 z-20">
+                <p class="text-[9px] text-gray-400">⚠️ <strong class="text-red-400">Modo Educacional:</strong> Chance real neste giro: <span id="win-chance" class="text-green-400 font-bold">20%</span></p>
+            </div>
+
+            <!-- IMAGEM SUPERIOR (Sangria Total de Ponta a Ponta) -->
+            <div class="relative w-full h-32 border-b-2 border-yellow-500/80 shadow-lg overflow-hidden bg-[#2a0505]">
+                <img id="top-mascot-img" src="mascote-topo.png" alt="Mascote Topo" class="w-full h-full object-cover object-center">
+                <div class="absolute bottom-0 w-full h-1 bg-gradient-to-r from-yellow-600 via-[#ffcc00] to-yellow-600"></div>
+            </div>
+        </div>
+
+       <!-- MÁQUINA DE SLOT 3x3 (Fiel à Referência com Pergaminho) -->
+        <main class="flex-1 flex flex-col items-center justify-center p-2 min-h-0">
+            
+            <!-- Moldura Externa Dourada do Templo -->
+            <div class="relative bg-gradient-to-b from-[#ffe066] via-[#d4af37] to-[#7a5800] p-1.5 rounded-2xl shadow-[0_0_25px_rgba(255,204,0,0.6)] w-full max-w-[360px]">
+                
+                <!-- Barra Decorativa Superior Dourada -->
+                <div class="w-full h-2 bg-gradient-to-r from-[#ffe066] via-[#fff5cc] to-[#ffe066] rounded-t-lg mb-0.5 border-b border-yellow-800"></div>
+
+                <!-- Contentor Principal das Bobinas -->
+                <div class="relative bg-[#a81313] p-1.5 rounded-lg flex items-center justify-between border-2 border-yellow-400 shadow-inner overflow-hidden">
+                    
+                    <!-- Pilar Vermelho Esquerdo com Números das Linhas -->
+                    <div class="flex flex-col justify-between h-full py-2 px-1 text-[11px] font-black text-yellow-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] select-none z-10 border-r border-yellow-600/40">
+                        <span>4</span>
+                        <span>2</span>
+                        <span>1</span>
+                        <span>3</span>
+                        <span>5</span>
+                    </div>
+
+                    <!-- Grade 3x3 com Fundo de Pergaminho e Divisórias Douradas -->
+                    <div class="grid grid-cols-3 gap-1 w-full mx-1 p-1 rounded bg-[#d4af37]/40 border border-yellow-500/60 shadow-inner relative" 
+                         style="background-image: url('pergaminho.png'); background-size: cover; background-position: center;">
+                        
+                        <!-- Coluna 1 -->
+                        <div class="flex flex-col gap-1 border-r-2 border-[#d4af37]/80 pr-0.5">
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-0"></div>
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-3"></div>
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-6"></div>
+                        </div>
+
+                        <!-- Coluna 2 -->
+                        <div class="flex flex-col gap-1 border-r-2 border-[#d4af37]/80 px-0.5">
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-1"></div>
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-4"></div>
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-7"></div>
+                        </div>
+
+                        <!-- Coluna 3 -->
+                        <div class="flex flex-col gap-1 pl-0.5">
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-2"></div>
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-5"></div>
+                            <div class="slot-cell h-20 flex items-center justify-center overflow-hidden p-0.5" id="cell-8"></div>
+                        </div>
+
+                    </div>
+
+                    <!-- Pilar Vermelho Direito com Números das Linhas -->
+                    <div class="flex flex-col justify-between h-full py-2 px-1 text-[11px] font-black text-yellow-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] select-none z-10 border-l border-yellow-600/40">
+                        <span>5</span>
+                        <span>2</span>
+                        <span>1</span>
+                        <span>3</span>
+                        <span>4</span>
+                    </div>
+
+                </div>
+
+                <!-- Barra Decorativa Inferior Dourada -->
+                <div class="w-full h-2 bg-gradient-to-r from-[#ffe066] via-[#fff5cc] to-[#ffe066] rounded-b-lg mt-0.5 border-t border-yellow-800"></div>
+            </div>
+
+            <!-- Display de Ganhos -->
+            <div class="h-6 flex items-center justify-center mt-1">
+                <span id="win-message" class="text-[#ffcc00] font-black text-xl drop-shadow-[0_0_10px_rgba(255,204,0,0.8)] opacity-0 transition-opacity">GANHO: R$ 0,00</span>
+            </div>
+
+        </main>
+
+        <!-- CONTROLES INFERIORES FIÉIS À REFERÊNCIA -->
+        <div class="bg-gradient-to-b from-[#8b1313] via-[#6d0b0b] to-[#4a0505] rounded-t-3xl border-t-2 border-[#ffcc00] p-2.5 shrink-0 flex flex-col gap-1.5 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] relative">
+            
+            <!-- Barra Superior de Info (3 Caixas Vermelhas Escuras Arredondadas) -->
+            <div class="grid grid-cols-3 gap-1.5 px-1">
+                <!-- Saldo -->
+                <div class="bg-[#2a0404]/90 border border-yellow-600/40 rounded-xl px-2 py-1 flex items-center justify-center gap-1 shadow-inner">
+                    <span class="text-[10px]">👛</span>
+                    <span id="control-balance-display" class="text-white font-bold text-[11px] truncate">0.00</span>
+                </div>
+                <!-- Aposta -->
+                <div class="bg-[#2a0404]/90 border border-yellow-600/40 rounded-xl px-2 py-1 flex items-center justify-center gap-1 shadow-inner">
+                    <span class="text-[10px]">🪙</span>
+                    <span id="current-bet-display" class="text-white font-bold text-[11px] truncate">10.00</span>
+                </div>
+                <!-- Ganho -->
+                <div class="bg-[#2a0404]/90 border border-yellow-600/40 rounded-xl px-2 py-1 flex items-center justify-center gap-1 shadow-inner">
+                    <span class="text-[10px]">🏆</span>
+                    <span id="control-win-display" class="text-yellow-400 font-bold text-[11px] truncate">0.00</span>
+                </div>
+            </div>
+
+            <!-- Botões Rápidos de Aposta (Presets) -->
+            <div class="flex justify-between gap-1 px-1 mt-0.5">
+                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="10">R$ 10</button>
+                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="50">R$ 50</button>
+                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="100">R$ 100</button>
+                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-[#ffcc00] rounded-lg py-0.5 text-[10px] text-[#ffcc00] font-bold" data-val="MAX">MAX</button>
+            </div>
+
+            <!-- Painel Principal de Giro Estilo Cassino -->
+            <div class="flex justify-between items-center px-2 py-1 relative">
+                <!-- Botão TURBO (Esquerda) -->
+                <button id="btn-turbo" class="flex flex-col items-center justify-center text-yellow-400/80 hover:text-yellow-300 active:scale-95 transition">
+                    <div class="w-8 h-8 rounded-full border border-yellow-500/60 bg-[#2a0404] flex items-center justify-center text-xs shadow">⚡</div>
+                    <span class="text-[7px] font-bold mt-0.5 tracking-wider text-yellow-400/90">TURBO</span>
+                </button>
+
+                <!-- Botão MENOS (-) -->
+                <button id="btn-minus" class="w-9 h-9 rounded-full border border-yellow-500/50 bg-[#2a0404]/90 text-yellow-400 text-lg font-black flex items-center justify-center shadow active:scale-95 opacity-80 hover:opacity-100">-</button>
+
+                <!-- BOTÃO CENTRAL DE GIRO (Verde com Moldura Dourada Esculpida) -->
+                <div class="relative flex items-center justify-center">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-b from-[#ffe066] via-[#d4af37] to-[#7a5800] p-1 flex items-center justify-center shadow-[0_0_20px_rgba(255,204,0,0.6)]">
+                        <button id="btn-spin" class="w-full h-full bg-gradient-to-b from-emerald-400 via-green-500 to-emerald-700 rounded-full border border-emerald-200 flex items-center justify-center shadow-inner cursor-pointer active:scale-95 transition-transform spin-btn-anim">
+                            <svg class="w-8 h-8 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botão MAIS (+) -->
+                <button id="btn-plus" class="w-9 h-9 rounded-full border border-yellow-500/50 bg-[#2a0404]/90 text-yellow-400 text-lg font-black flex items-center justify-center shadow active:scale-95 opacity-80 hover:opacity-100">+</button>
+
+                <!-- Botão AUTO (Direita) -->
+                <button id="btn-auto" class="flex flex-col items-center justify-center text-yellow-400/80 hover:text-yellow-300 active:scale-95 transition">
+                    <div class="w-8 h-8 rounded-full border border-yellow-500/60 bg-[#2a0404] flex items-center justify-center text-xs shadow">▶</div>
+                    <span class="text-[7px] font-bold mt-0.5 tracking-wider text-yellow-400/90">AUTO</span>
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- LÓGICA DO JOGO E FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCxO8N8Fm7Uk9O21w_IvSTEBKacwi4sTEk",
+            authDomain: "h2mcg-daf6c.firebaseapp.com",
+            databaseURL: "https://h2mcg-daf6c-default-rtdb.firebaseio.com",
+            projectId: "h2mcg-daf6c",
+            storageBucket: "h2mcg-daf6c.appspot.com",
+            messagingSenderId: "222349854335",
+            appId: "1:222349854335:web:b338457356462c1f49614a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            let currentUser = localStorage.getItem("penguin_active_user");
+            let balance = 0;
+            let currentBet = 10;
+            let isSpinning = false;
+            let isTurbo = false;
+            let isAuto = false;
+
+            const symbols = ['💰', '🧧', '🧨', '💎', '🐧'];
+            const payouts = { '💰': 2, '🧧': 3, '🧨': 5, '💎': 10, '🐧': 50 };
+
+            const symbolMap = {
+                '💰': { img: 'simbolo-1.png', fallback: '💰' },
+                '🧧': { img: 'simbolo-2.png', fallback: '🧧' },
+                '🧨': { img: 'simbolo-3.png', fallback: '🧨' },
+                '💎': { img: 'simbolo-4.png', fallback: '💎' },
+                '🐧': { img: 'simbolo-wild.png', fallback: '🐧' }
+            };
+
+            const balanceDisplay = document.getElementById("game-balance");
+            const betDisplay = document.getElementById("current-bet-display");
+            const winMessage = document.getElementById("win-message");
+            const chanceDisplay = document.getElementById("win-chance");
+            const topMascotImg = document.getElementById("top-mascot-img");
+            const cells = Array.from({length: 9}, (_, i) => document.getElementById(`cell-${i}`));
+
+            const btnTurbo = document.getElementById("btn-turbo");
+            const btnAuto = document.getElementById("btn-auto");
+
+            if (!currentUser) {
+                alert("Você precisa estar logado para jogar!");
+                window.location.href = "index.html";
+                return;
+            }
+
+            function renderSymbolHTML(symbolKey) {
+                const item = symbolMap[symbolKey];
+                return `<img src="${item.img}" alt="${symbolKey}" class="w-full h-full object-contain drop-shadow-md scale-105" onerror="this.onerror=null; this.outerHTML='<span class=\\'text-4xl\\'>${item.fallback}</span>';">`;
+            }
+
+            async function loadBalance() {
+                try {
+                    const snapshot = await get(child(ref(db), `users/${currentUser}`));
+                    if (snapshot.exists()) {
+                        balance = snapshot.val().balance;
+                        updateUI();
+                        updateEducationalPanel();
+                    } else {
+                        window.location.href = "index.html";
+                    }
+                } catch (error) {
+                    console.error("Erro ao carregar dados:", error);
+                }
+            }
+
+            function updateUI() {
+                const formattedBalance = balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                balanceDisplay.textContent = formattedBalance;
+                
+                const controlBalance = document.getElementById("control-balance-display");
+                if (controlBalance) controlBalance.textContent = formattedBalance;
+                
+                if (betDisplay) betDisplay.textContent = currentBet.toFixed(2);
+            }
+
+            async function saveBalance(newBalance) {
+                balance = newBalance;
+                updateUI();
+                await update(ref(db, `users/${currentUser}`), { balance: balance });
+            }
+
+            // CONTROLES DE APOSTA (+ / - / PRESETS)
+            document.getElementById("btn-plus").addEventListener("click", () => {
+                if(isSpinning) return;
+                if(currentBet + 10 <= balance) currentBet += 10;
+                else currentBet = balance;
+                updateUI();
+            });
+
+            document.getElementById("btn-minus").addEventListener("click", () => {
+                if(isSpinning) return;
+                if(currentBet - 10 >= 10) currentBet -= 10;
+                else currentBet = 10;
+                updateUI();
+            });
+
+            document.querySelectorAll(".bet-preset-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    if(isSpinning) return;
+                    let val = e.target.getAttribute("data-val");
+                    if (val === "MAX") currentBet = balance > 0 ? balance : 10;
+                    else {
+                        val = parseInt(val);
+                        if (val <= balance) currentBet = val;
+                        else {
+                            alert("Saldo insuficiente para essa aposta.");
+                            currentBet = balance > 0 ? balance : 10;
+                        }
+                    }
+                    updateUI();
+                });
+            });
+
+            // ATIVAR / DESATIVAR MODOS TURBO E AUTO
+            btnTurbo.addEventListener("click", () => {
+                isTurbo = !isTurbo;
+                const iconDiv = btnTurbo.querySelector("div");
+                if (isTurbo) {
+                    iconDiv.classList.replace("bg-[#2a0404]", "bg-yellow-500");
+                    iconDiv.classList.replace("text-xs", "text-sm");
+                    iconDiv.classList.add("text-black", "shadow-[0_0_10px_#ffcc00]");
+                } else {
+                    iconDiv.classList.replace("bg-yellow-500", "bg-[#2a0404]");
+                    iconDiv.classList.replace("text-sm", "text-xs");
+                    iconDiv.classList.remove("text-black", "shadow-[0_0_10px_#ffcc00]");
+                }
+            });
+
+            btnAuto.addEventListener("click", () => {
+                isAuto = !isAuto;
+                updateAutoButtonUI();
+                if (isAuto && !isSpinning) {
+                    executeSpin();
+                }
+            });
+
+            function updateAutoButtonUI() {
+                const iconDiv = btnAuto.querySelector("div");
+                if (isAuto) {
+                    iconDiv.classList.replace("bg-[#2a0404]", "bg-emerald-500");
+                    iconDiv.classList.add("text-black", "shadow-[0_0_10px_#10b981]");
+                } else {
+                    iconDiv.classList.replace("bg-emerald-500", "bg-[#2a0404]");
+                    iconDiv.classList.remove("text-black", "shadow-[0_0_10px_#10b981]");
+                }
+            }
+
+            function stopAutoSpin() {
+                isAuto = false;
+                updateAutoButtonUI();
+            }
+
+            function getRiggedResult() {
+                let chanceOfWinning = 0;
+                if (balance < 50) chanceOfWinning = 0.5;
+                else if (balance < 200) chanceOfWinning = 0.2;
+                else chanceOfWinning = 0.05;
+
+                const willWin = Math.random() < chanceOfWinning;
+                
+                let resultGrid = [];
+                if (willWin) {
+                    const winningSymbol = symbols[Math.floor(Math.random() * (symbols.length - 1))];
+                    for(let i = 0; i < 9; i++) {
+                        if(i >= 3 && i <= 5) resultGrid.push(winningSymbol);
+                        else resultGrid.push(symbols[Math.floor(Math.random() * symbols.length)]);
+                    }
+                } else {
+                    for(let i = 0; i < 9; i++) {
+                        resultGrid.push(symbols[Math.floor(Math.random() * symbols.length)]);
+                    }
+                    if(resultGrid[3] === resultGrid[4] && resultGrid[4] === resultGrid[5]) {
+                        resultGrid[5] = symbols[(symbols.indexOf(resultGrid[5]) + 1) % symbols.length];
+                    }
+                }
+                return resultGrid;
+            }
+
+            function updateEducationalPanel() {
+                if (balance < 50) chanceDisplay.textContent = "50% (Te dando esperança)";
+                else if (balance < 200) chanceDisplay.textContent = "20% (Modo Padrão)";
+                else chanceDisplay.textContent = "5% (Bloqueando seus lucros!)";
+            }
+
+            // FUNÇÃO PRINCIPAL DE GIRO
+            async function executeSpin() {
+                if (isSpinning) return;
+                if (balance < currentBet || balance === 0) {
+                    alert("Saldo insuficiente!");
+                    stopAutoSpin();
+                    return;
+                }
+
+                isSpinning = true;
+                winMessage.style.opacity = '0';
+                cells.forEach(c => c.classList.remove("win-anim"));
+                
+                if (topMascotImg) topMascotImg.src = "mascote-girando.png";
+
+                await saveBalance(balance - currentBet);
+                updateEducationalPanel();
+
+                cells.forEach(cell => cell.classList.add("spinning"));
+                
+                const intervalSpeed = isTurbo ? 40 : 100;
+                const spinDuration = isTurbo ? 300 : 2000;
+
+                let spinInterval = setInterval(() => {
+                    cells.forEach(cell => {
+                        const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+                        cell.innerHTML = renderSymbolHTML(randomSymbol);
+                    });
+                }, intervalSpeed);
+
+                setTimeout(async () => {
+                    clearInterval(spinInterval);
+                    cells.forEach(cell => cell.classList.remove("spinning"));
+
+                    const finalGrid = getRiggedResult();
+                    cells.forEach((cell, i) => { cell.innerHTML = renderSymbolHTML(finalGrid[i]); });
+
+                    await checkWin(finalGrid);
+                }, spinDuration);
+            }
+
+            document.getElementById("btn-spin").addEventListener("click", () => {
+                if (isAuto) stopAutoSpin(); // Se o usuário clicar manualmente enquanto está no Auto, cancela o Auto
+                executeSpin();
+            });
+
+            // CHECAGEM DE VITÓRIA / DERROTA
+            async function checkWin(grid) {
+                const lines = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                    [0, 4, 8], [2, 4, 6]
+                ];
+
+                let totalPayout = 0;
+                let winningCells = [];
+
+                lines.forEach(line => {
+                    const [a, b, c] = line;
+                    if (grid[a] === grid[b] && grid[b] === grid[c]) {
+                        const symbol = grid[a];
+                        const multiplier = payouts[symbol];
+                        totalPayout += (currentBet * multiplier);
+                        winningCells.push(a, b, c);
+                    }
+                });
+
+                const controlWin = document.getElementById("control-win-display");
+
+                if (totalPayout > 0) {
+                    if (controlWin) controlWin.textContent = totalPayout.toFixed(2);
+                    if (topMascotImg) topMascotImg.src = "mascote-vitoria.png";
+
+                    winningCells.forEach(index => cells[index].classList.add("win-anim"));
+                    winMessage.textContent = `GANHO: ${totalPayout.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                    winMessage.style.opacity = '1';
+                    
+                    await saveBalance(balance + totalPayout);
+                    
+                    // GANHOU: Interrompe o modo Auto
+                    if (isAuto) {
+                        stopAutoSpin();
+                    }
+                } else {
+                    if (controlWin) controlWin.textContent = "0.00";
+                    if (topMascotImg) topMascotImg.src = "mascote-topo.png";
+
+                    winMessage.textContent = "Tente novamente!";
+                    winMessage.style.opacity = '0.5';
+
+                    // PERDEU: Se o modo Auto estiver ligado, dispara a próxima rodada após pequena pausa
+                    if (isAuto) {
+                        setTimeout(() => {
+                            isSpinning = false;
+                            executeSpin();
+                        }, isTurbo ? 150 : 500);
+                        return;
+                    }
+                }
+
+                isSpinning = false;
+            }
+
+            loadBalance();
+        });
+    </script>
+</body>
+</html>
