@@ -232,6 +232,7 @@
             let isSpinning = false;
             let isTurbo = false;
             let isAuto = false;
+            let freeSpinsCount = 0;
 
             // ==========================================
             // SISTEMA DE ÁUDIO
@@ -286,7 +287,9 @@
                 try {
                     const snapshot = await get(child(ref(db), `users/${currentUser}`));
                     if (snapshot.exists()) {
-                        balance = snapshot.val().balance;
+                        const data = snapshot.val();
+                        balance = data.balance;
+                        freeSpinsCount = data.hasFreeSpins || 0; // <--- Adiciona esta linha
                         updateUI();
                     } else {
                         window.location.href = "index.html";
@@ -303,7 +306,15 @@
                 const controlBalance = document.getElementById("control-balance-display");
                 if (controlBalance) controlBalance.textContent = formattedBalance;
                 
-                if (betDisplay) betDisplay.textContent = currentBet.toFixed(2);
+                if (betDisplay) {
+                    if (freeSpinsCount > 0) {
+                        betDisplay.textContent = `GRÁTIS (${freeSpinsCount})`;
+                        betDisplay.classList.add("text-emerald-300", "animate-pulse");
+                    } else {
+                        betDisplay.textContent = currentBet.toFixed(2);
+                        betDisplay.classList.remove("text-emerald-300", "animate-pulse");
+                    }
+                }
             }
 
             async function saveBalance(newBalance) {
@@ -413,10 +424,10 @@
             // FUNÇÃO PRINCIPAL DE GIRO
             async function executeSpin() {
                 if (isSpinning) return;
-                if (balance < currentBet || balance === 0) {
-                    alert("Saldo insuficiente!");
-                    stopAutoSpin();
-                    return;
+                if (balance < currentBet && freeSpinsCount <= 0) {
+                alert("Saldo insuficiente!");
+                stopAutoSpin();
+                return;
                 }
 
                 isSpinning = true;
@@ -425,7 +436,13 @@
                 
                 if (topMascotImg) topMascotImg.src = "mascote-girando.png";
 
-                await saveBalance(balance - currentBet);
+                if (freeSpinsCount > 0) {
+                    freeSpinsCount--;
+                    await update(ref(db, `users/${currentUser}`), { hasFreeSpins: freeSpinsCount });
+                } else {
+                    await saveBalance(balance - currentBet);
+                }
+            updateUI();
 
                 cells.forEach(cell => cell.classList.add("spinning"));
                 
