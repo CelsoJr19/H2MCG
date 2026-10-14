@@ -642,48 +642,65 @@
                     }
                 });
             }
-            
+
             function checkMissions(userMissions) {
                 const missions = ["conta", "anuncio", "convite"];
+    
                 missions.forEach(mission => {
                     const btn = document.getElementById(`missao-${mission}`);
-                    if (userMissions[mission] === todayDate) {
+                    if (!btn) return; // Evita erros se o botão não existir
+
+                    let isCompleted = false;
+                    if (mission === "conta") {
+                        // Verifica tanto o booleano (true) quanto texto ("true") por segurança
+                        isCompleted = (userMissions[mission] === true || userMissions[mission] === "true");
+                    } else {
+                        isCompleted = (userMissions[mission] === todayDate);
+                    }
+
+                    if (isCompleted) {
                         btn.textContent = "Concluído";
-                        btn.classList.replace("bg-[#ffcc00]", "bg-gray-600");
-                        btn.classList.replace("text-black", "text-gray-300");
-                        btn.disabled = true;
+                        btn.classList.remove("bg-[#ffcc00]", "text-black");
+                        btn.classList.add("bg-gray-600", "text-gray-300");
+                        btn.disabled = true; // Trava o botão no HTML
                     } else {
                         btn.textContent = mission === "conta" ? "Resgatar" : (mission === "anuncio" ? "Assistir" : "Convidar");
-                        btn.classList.replace("bg-gray-600", "bg-[#ffcc00]");
-                        btn.classList.replace("text-gray-300", "text-black");
-                        btn.disabled = false;
+                        btn.classList.remove("bg-gray-600", "text-gray-300");
+                        btn.classList.add("bg-[#ffcc00]", "text-black");
+                        btn.disabled = false; // Destrava o botão
                     }
                 });
             }
 
-
             document.querySelectorAll(".mission-btn").forEach(btn => {
                 btn.addEventListener("click", async (e) => {
-                    if (!currentUser) { alert("Crie uma Conta ou Entre primeiro!"); return; }       
-                    const missionType = e.target.getAttribute("data-mission");
+                    if (!currentUser) { alert("Crie uma Conta ou Entre primeiro!"); return; }
+        
+                    // TRAVA 1: Se o botão já estiver desativado ou concluído, ignora o clique
+                    if (btn.disabled || btn.textContent === "Concluído" || btn.textContent === "Aguarde...") return;
+        
+                    // TRAVA 2: Desativa o botão IMEDIATAMENTE na tela para evitar spam de cliques
+                    btn.disabled = true;
+                    btn.textContent = "Aguarde...";
 
+                    const missionType = btn.getAttribute("data-mission");
+        
                     if (missionType === "anuncio") alert("Você assistiu a um anúncio.");
                     if (missionType === "convite") alert("Amigo registrado!");
 
+                    // Adiciona o saldo
                     await saveBalanceToCloud(currentBalance + 50);
         
-                    // LÓGICA NOVA NO SALVAMENTO DO FIREBASE:
-                    // Se for a missão da conta, salva 'true' (eterno). Senão, salva o 'todayDate' (diário).
+                    // Salva no Firebase
                     const missionValue = (missionType === "conta") ? true : todayDate;
-        
                     await update(ref(db, `users/${currentUser}/missions`), { 
                         [missionType]: missionValue 
                     });
 
                     alert("Missão concluída! R$ 50,00 adicionados.");
         
-                    // Atualiza a tela após resgatar
-                    loadUserData(); 
+                    // Recarrega os dados, o que vai chamar o checkMissions e atualizar a UI
+                    await loadUserData(); 
                 });
             });
 
