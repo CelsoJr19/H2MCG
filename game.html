@@ -239,10 +239,17 @@
             // ==========================================
             const bgMusic = new Audio('musica-fundo.mp3');
             bgMusic.loop = true; // Faz a música tocar em loop infinito
-            bgMusic.volume = 0.3; // Volume mais baixo para não atrapalhar (30%)
+            bgMusic.volume = 0.9; // Volume (90%)
 
             const winSound = new Audio('som-vitoria.mp3');
-            winSound.volume = 0.9; // Volume alto para destacar a vitória (90%)
+            winSound.volume = 1.0; // Volume (100%)
+
+            const joiaSound = new Audio('som-joia.mp3'); // Nome do arquivo de áudio da joia
+            joiaSound.volume = 1.0;
+
+            const wildSound = new Audio('som-wild.mp3'); // Nome do arquivo de áudio do pinguim
+            wildSound.volume = 1.0;
+            
 
             // Os navegadores bloqueiam áudio automático, então iniciamos no 1º clique do usuário na tela
             document.body.addEventListener('click', () => {
@@ -395,43 +402,70 @@
             }
 
             function getRiggedResult() {
-                // Chance base conservadora para apostas mínimas (R$ 1 a R$ 5)
-                let baseChance = 0.18; 
+                // 1. CHANCE DE VITÓRIA DINÂMICA (Baseada no saldo)
+                // Começa em 30% (muito divertido, entrega prêmios com frequência)
+                let baseChance = 0.30; 
 
-                // Restrição severa por tamanho de aposta (Apostas altas viram armadilhas quase certas de perda)
-                if (currentBet > 5.00 && currentBet <= 20.00) {
-                    baseChance = 0.08;
-                } else if (currentBet > 20.00 && currentBet <= 100.00) {
-                    baseChance = 0.03; // Apenas 3% de chance de acerto
-                } else if (currentBet > 100.00) {
-                    baseChance = 0.01; // 1% de chance em apostas massivas (R$ 500)
-                }
+                // Conforme o saldo sobe, a máquina vai "esfriando" de forma gradual e invisível
+                if (balance > 100) baseChance = 0.22;
+                if (balance > 300) baseChance = 0.15;
+                if (balance > 800) baseChance = 0.08;
+                if (balance > 1500) baseChance = 0.02;
 
-                // Restrição severa por crescimento de banca (Assim que o jogador lucra, a casa aperta o cerco)
-                if (balance > 300) baseChance *= 0.6;
-                if (balance > 1000) baseChance *= 0.3;
-                if (balance > 5000) baseChance *= 0.1; // Praticamente travado com saldo alto
+                // Penalidade para apostas agressivas
+                if (currentBet >= 20.00) baseChance *= 0.6;
 
                 const willWin = Math.random() < baseChance;
-                
+
+                // 2. GERAÇÃO 100% ALEATÓRIA DA GRELHA (Visual perfeitamente natural)
                 let resultGrid = [];
-                if (willWin) {
-                    // Mantém a tabela oficial intocada, sorteando um símbolo legítimo
-                    const winningSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-                    
-                    for(let i = 0; i < 9; i++) {
-                        if(i >= 3 && i <= 5) resultGrid.push(winningSymbol);
-                        else resultGrid.push(symbols[Math.floor(Math.random() * symbols.length)]);
-                    }
-                } else {
-                    // Grade perdedora garantida
-                    for(let i = 0; i < 9; i++) {
-                        resultGrid.push(symbols[Math.floor(Math.random() * symbols.length)]);
-                    }
-                    if(resultGrid[3] === resultGrid[4] && resultGrid[4] === resultGrid[5]) {
-                        resultGrid[5] = symbols[(symbols.indexOf(resultGrid[5]) + 1) % symbols.length];
-                    }
+                for (let i = 0; i < 9; i++) {
+                    resultGrid.push(symbols[Math.floor(Math.random() * symbols.length)]);
                 }
+
+                // 3. DISTRIBUIÇÃO INTELIGENTE DE PRÊMIOS
+                if (willWin) {
+                    let winningSymbol = '🧨';
+                    let rand = Math.random();
+
+                    if (balance > 1000) {
+                        // Se o jogador estiver muito rico, limita os prêmios aos símbolos mais baratos
+                        winningSymbol = rand < 0.8 ? '🧨' : '🧧';
+                    } else {
+                        // Sistema de Raridade Clássico de Cassino
+                        if (rand < 0.50) winningSymbol = '🧨';       // 50% de chance (Prêmio x2)
+                        else if (rand < 0.80) winningSymbol = '🧧';  // 30% de chance (Prêmio x4)
+                        else if (rand < 0.93) winningSymbol = '💰';  // 13% de chance (Prêmio x8)
+                        else if (rand < 0.98) winningSymbol = '💎';  // 5% de chance (Prêmio x15)
+                        else winningSymbol = '🐧';                   // 2% de chance (Prêmio x30 - Jackpot)
+                    }
+
+                    // Aplica a vitória na linha do meio
+                    resultGrid[3] = winningSymbol;
+                    resultGrid[4] = winningSymbol;
+                    resultGrid[5] = winningSymbol;
+                }
+
+                // 4. VARREDURA ANTI-FALHAS (Quebra vitórias acidentais indesejadas)
+                const fixAccidentalWin = (index) => {
+                    let currentSym = resultGrid[index];
+                    let nextSym = symbols[(symbols.indexOf(currentSym) + 1) % symbols.length];
+                    // Garante que a correção não insira um Wild (🐧) acidentalmente
+                    if (nextSym === '🐧') nextSym = '🧨';
+                    resultGrid[index] = nextSym;
+                };
+
+                // Verifica e quebra trincas na Linha de Cima
+                if (resultGrid[0] === resultGrid[1] && resultGrid[1] === resultGrid[2]) fixAccidentalWin(2);
+                // Verifica e quebra trincas na Linha de Baixo
+                if (resultGrid[6] === resultGrid[7] && resultGrid[7] === resultGrid[8]) fixAccidentalWin(8);
+                // Verifica e quebra trincas na Linha do Meio (apenas se for uma rodada perdedora)
+                if (!willWin && resultGrid[3] === resultGrid[4] && resultGrid[4] === resultGrid[5]) fixAccidentalWin(5);
+                // Verifica e quebra trincas na Diagonal 1 (\)
+                if (resultGrid[0] === resultGrid[4] && resultGrid[4] === resultGrid[8]) fixAccidentalWin(8);
+                // Verifica e quebra trincas na Diagonal 2 (/)
+                if (resultGrid[2] === resultGrid[4] && resultGrid[4] === resultGrid[6]) fixAccidentalWin(6);
+
                 return resultGrid;
             }
 
@@ -511,8 +545,21 @@
                 const controlWin = document.getElementById("control-win-display");
 
                 if (totalPayout > 0) {
-                    winSound.currentTime = 0; 
-                    winSound.play();
+                    // Lê todo o conteúdo HTML (imagem, texto, atributos) da célula vencedora
+                    const conteudoDaCelula = cells[winningCells[0]].innerHTML.toLowerCase();
+
+                    // Verifica se contém o emoji OU parte do nome da imagem (ajuste se os seus ficheiros tiverem nomes diferentes)
+                    if (conteudoDaCelula.includes('💎') || conteudoDaCelula.includes('joia') || conteudoDaCelula.includes('anel') || conteudoDaCelula.includes('jade')) {
+                        joiaSound.currentTime = 0;
+                        joiaSound.play();
+                    } else if (conteudoDaCelula.includes('🐧') || conteudoDaCelula.includes('wild') || conteudoDaCelula.includes('pinguim') || conteudoDaCelula.includes('penguin')) {
+                        wildSound.currentTime = 0;
+                        wildSound.play();
+                    } else {
+                        winSound.currentTime = 0;
+                        winSound.play();
+                    }
+                    
                     if (controlWin) controlWin.textContent = totalPayout.toFixed(2);
                     if (topMascotImg) topMascotImg.src = "mascote-vitoria.png";
 
