@@ -165,7 +165,7 @@
                 </div>
                 <div id="home-btn-ads" class="flex-1 bg-[#8b1c1c] rounded-lg p-2 text-center border border-red-900 relative overflow-hidden flex flex-col justify-center h-14 cursor-pointer">
                     <p class="text-[9px] text-gray-200">Anúncio</p>
-                    <p class="text-[11px] font-bold text-[#ffcc00]">Bônus R$ 50</p>
+                    <p class="text-[11px] font-bold text-[#ffcc00]">Bônus R$ 1</p>
                 </div>
             </div>
 
@@ -294,7 +294,7 @@
                     <div class="bg-[#093526] border border-green-800 rounded p-3 flex justify-between items-center shadow">
                         <div>
                             <p class="text-xs font-bold text-white">Assistir a um Anúncio</p>
-                            <p class="text-[10px] font-bold text-[#ffcc00] mt-1">+ R$ 50,00</p>
+                            <p class="text-[10px] font-bold text-[#ffcc00] mt-1">+ R$ 1,00</p>
                         </div>
                         <button id="missao-anuncio" class="bg-[#ffcc00] text-black text-[10px] font-black py-1 px-3 rounded mission-btn" data-mission="anuncio">Assistir</button>
                     </div>
@@ -642,7 +642,7 @@
                         if (exists) {
                             alert("Este nome de usuário já existe. Escolha outro.");
                         } else {
-                            await set(ref(db, `users/${user}`), { password: pass, balance: 100, missions: {} });
+                            await set(ref(db, `users/${user}`), { password: pass, balance: 0, missions: {} });
                             
                             // LÓGICA DE PAGAMENTO DO AFILIADO
                             const refCode = document.getElementById("auth-referral").value.trim();
@@ -659,7 +659,7 @@
                             currentUser = user;
                             localStorage.setItem("penguin_active_user", user);
                             await loadUserData();
-                            alert(`Conta criada! Você ganhou R$ 100,00 de bônus inicial!`);
+                            alert(`Conta criada! Divirta-se!`);
                         }
                     }
                 } catch (error) {
@@ -671,14 +671,14 @@
                 authModal.classList.add("hidden");
             });
             
-            // VERIFICAÇÃO DE MISSÕES (COM EXCEÇÃO PARA O CONVITE)
+            // VERIFICAÇÃO DE MISSÕES (COM EXCEÇÃO PARA O CONVITE E ANÚNCIO)
             function checkMissions(userMissions) {
                 const missions = ["conta", "anuncio", "convite"];
                 missions.forEach(mission => {
                     const btn = document.getElementById(`missao-${mission}`);
                     if (!btn) return;
                     
-                    // CONVITE ILIMITADO: Mantém o botão sempre disponível
+                    // CONVITE ILIMITADO
                     if (mission === "convite") {
                         btn.textContent = "Convidar";
                         btn.classList.remove("bg-gray-600", "text-gray-300");
@@ -686,13 +686,21 @@
                         btn.disabled = false;
                         return; 
                     }
+
+                    // ANÚNCIO ILIMITADO
+                    if (mission === "anuncio") {
+                        btn.textContent = "Assistir";
+                        btn.classList.remove("bg-gray-600", "text-gray-300");
+                        btn.classList.add("bg-[#ffcc00]", "text-black");
+                        btn.disabled = false;
+                        return; 
+                    }
                     
+                    // LÓGICA DA MISSÃO ÚNICA (CONTA)
                     let isCompleted = false;
                     if (mission === "conta") {
                         isCompleted = (userMissions[mission] === true || userMissions[mission] === "true");
-                    } else {
-                        isCompleted = (userMissions[mission] === todayDate);
-                    }
+                    } 
                     
                     if (isCompleted) {
                         btn.textContent = "Concluído";
@@ -700,7 +708,7 @@
                         btn.classList.add("bg-gray-600", "text-gray-300");
                         btn.disabled = true;
                     } else {
-                        btn.textContent = mission === "conta" ? "Resgatar" : (mission === "anuncio" ? "Assistir" : "Convidar");
+                        btn.textContent = "Resgatar";
                         btn.classList.remove("bg-gray-600", "text-gray-300");
                         btn.classList.add("bg-[#ffcc00]", "text-black");
                         btn.disabled = false;
@@ -721,13 +729,47 @@
                         return; 
                     }
                     
-                    if (btn.disabled || btn.textContent === "Concluído" || btn.textContent === "Aguarde...") return;
+                    if (btn.disabled || btn.textContent === "Concluído" || btn.textContent.includes("Aguarde")) return;
                     
                     btn.disabled = true;
+
+                    // ==========================================
+                    // MISSÃO DE ANÚNCIO (ILIMITADA COM SMARTLINK)
+                    // ==========================================
+                    if (missionType === "anuncio") {
+                        // 1. Abre o Smartlink da Adsterra
+                        window.open("https://araplhn.org/4/eba6331256635e836af9d3abb34a5586", "_blank");
+                        
+                        // 2. Inicia o cronômetro
+                        let tempoRestante = 15;
+                        btn.textContent = `Aguarde ${tempoRestante}s...`;
+                        
+                        const contador = setInterval(async () => {
+                            tempoRestante--;
+                            if (tempoRestante > 0) {
+                                btn.textContent = `Aguarde ${tempoRestante}s...`;
+                            } else {
+                                clearInterval(contador); 
+                                
+                                // 3. Paga a recompensa SEM gravar limite no banco
+                                await saveBalanceToCloud(currentBalance + 1);
+                                
+                                alert("Visualização confirmada! R$ 1,00 adicionados.");
+                                
+                                // 4. Destrava o botão para o usuário poder assistir de novo
+                                btn.textContent = "Assistir";
+                                btn.disabled = false;
+                                
+                                await loadUserData(); 
+                            }
+                        }, 1000);
+                        
+                        return; // Impede que execute o resto do código abaixo
+                    }
+                    
                     btn.textContent = "Aguarde...";
                     
-                    if (missionType === "anuncio") alert("Você assistiu a um anúncio.");
-                    
+                    // PAGAMENTO DA MISSÃO DE CONTA
                     await saveBalanceToCloud(currentBalance + 50);
                     
                     const missionValue = (missionType === "conta") ? true : todayDate;
