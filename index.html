@@ -328,24 +328,24 @@
                         </thead>
                         <tbody class="text-white text-xs divide-y divide-green-900/50">
                             <tr>
-                                <td class="px-4 py-2 flex justify-center items-center gap-2"><span class="text-xl">💰</span> <span class="text-gray-400">Ouro</span></td>
+                                <td class="px-4 py-2 flex justify-center items-center gap-2"><span class="text-xl">🧨</span> <span class="text-gray-400">Bombinha</span></td>
                                 <td class="px-4 py-2 text-center font-bold text-green-400">2x</td>
                             </tr>
                             <tr>
                                 <td class="px-4 py-2 flex justify-center items-center gap-2"><span class="text-xl">🧧</span> <span class="text-gray-400">Envelope</span></td>
-                                <td class="px-4 py-2 text-center font-bold text-green-400">3x</td>
+                                <td class="px-4 py-2 text-center font-bold text-green-400">4x</td>
                             </tr>
                             <tr>
-                                <td class="px-4 py-2 flex justify-center items-center gap-2"><span class="text-xl">🧨</span> <span class="text-gray-400">Bombinha</span></td>
-                                <td class="px-4 py-2 text-center font-bold text-green-400">5x</td>
+                                <td class="px-4 py-2 flex justify-center items-center gap-2"><span class="text-xl">💰</span> <span class="text-gray-400">Ouro</span></td>
+                                <td class="px-4 py-2 text-center font-bold text-green-400">8x</td>
                             </tr>
                             <tr>
                                 <td class="px-4 py-2 flex justify-center items-center gap-2"><span class="text-xl">💎</span> <span class="text-gray-400">Joia</span></td>
-                                <td class="px-4 py-2 text-center font-bold text-green-400">10x</td>
+                                <td class="px-4 py-2 text-center font-bold text-green-400">15x</td>
                             </tr>
                             <tr class="bg-yellow-900/30">
                                 <td class="px-4 py-2 flex justify-center items-center gap-2"><span class="text-xl">🐧</span> <span class="text-[#ffcc00] font-bold">WILD</span></td>
-                                <td class="px-4 py-2 text-center font-black text-[#ffcc00]">50x</td>
+                                <td class="px-4 py-2 text-center font-black text-[#ffcc00]">30x</td>
                             </tr>
                         </tbody>
                     </table>
@@ -613,6 +613,36 @@
                 authModal.classList.add("hidden");
             });
 
+            function checkMissions (userMissions) {
+                const missions = ["conta", "anuncio", "convite"];
+    
+                missions.forEach(mission => {
+                    const btn = document.getElementById(`missao-${mission}`);
+        
+                    // LÓGICA NOVA: 
+                    // Se for "conta", verifica se é 'true' (feito para sempre). 
+                    // Se for outra missão, verifica se a data é a de hoje (missão diária).
+                    let isCompleted = false;
+                    if (mission === "conta") {
+                        isCompleted = userMissions[mission] === true;
+                    } else {
+                        isCompleted = userMissions[mission] === todayDate;
+                    }
+
+                    if (isCompleted) {
+                        btn.textContent = "Concluído";
+                        btn.classList.replace("bg-[#ffcc00]", "bg-gray-600");
+                        btn.classList.replace("text-black", "text-gray-300");
+                        btn.disabled = true;
+                    } else {
+                        btn.textContent = mission === "conta" ? "Resgatar" : (mission === "anuncio" ? "Assistir" : "Convidar");
+                        btn.classList.replace("bg-gray-600", "bg-[#ffcc00]");
+                        btn.classList.replace("text-gray-300", "text-black");
+                        btn.disabled = false;
+                    }
+                });
+            }
+            
             function checkMissions(userMissions) {
                 const missions = ["conta", "anuncio", "convite"];
                 missions.forEach(mission => {
@@ -631,19 +661,29 @@
                 });
             }
 
+
             document.querySelectorAll(".mission-btn").forEach(btn => {
                 btn.addEventListener("click", async (e) => {
-                    if (!currentUser) { alert("Crie uma Conta ou Entre primeiro!"); return; }
+                    if (!currentUser) { alert("Crie uma Conta ou Entre primeiro!"); return; }       
                     const missionType = e.target.getAttribute("data-mission");
-                    
+
                     if (missionType === "anuncio") alert("Você assistiu a um anúncio.");
                     if (missionType === "convite") alert("Amigo registrado!");
 
                     await saveBalanceToCloud(currentBalance + 50);
-                    await update(ref(db, `users/${currentUser}/missions`), { [missionType]: todayDate });
-                    
+        
+                    // LÓGICA NOVA NO SALVAMENTO DO FIREBASE:
+                    // Se for a missão da conta, salva 'true' (eterno). Senão, salva o 'todayDate' (diário).
+                    const missionValue = (missionType === "conta") ? true : todayDate;
+        
+                    await update(ref(db, `users/${currentUser}/missions`), { 
+                        [missionType]: missionValue 
+                    });
+
                     alert("Missão concluída! R$ 50,00 adicionados.");
-                    loadUserData();
+        
+                    // Atualiza a tela após resgatar
+                    loadUserData(); 
                 });
             });
 
