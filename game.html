@@ -165,9 +165,9 @@
 
             <!-- Botões Rápidos de Aposta (Presets) -->
             <div class="flex justify-between gap-1 px-1 mt-0.5">
-                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="10">R$ 10</button>
-                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="50">R$ 50</button>
-                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="100">R$ 100</button>
+                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="1">R$ 1</button>
+                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="5">R$ 5</button>
+                <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-yellow-600/40 rounded-lg py-0.5 text-[10px] text-yellow-200/80 hover:border-[#ffcc00]" data-val="20">R$ 20</button>
                 <button class="bet-preset-btn flex-1 bg-[#3a0606] border border-[#ffcc00] rounded-lg py-0.5 text-[10px] text-[#ffcc00] font-bold" data-val="MAX">MAX</button>
             </div>
 
@@ -228,7 +228,7 @@
         document.addEventListener("DOMContentLoaded", async () => {
             let currentUser = localStorage.getItem("penguin_active_user");
             let balance = 0;
-            let currentBet = 10;
+            let currentBet = 1.00;
             let isSpinning = false;
             let isTurbo = false;
             let isAuto = false;
@@ -326,15 +326,15 @@
             // CONTROLES DE APOSTA (+ / - / PRESETS)
             document.getElementById("btn-plus").addEventListener("click", () => {
                 if(isSpinning) return;
-                if(currentBet + 10 <= balance) currentBet += 10;
+                if(currentBet + 2.00 <= balance) currentBet += 2.00;
                 else currentBet = balance;
                 updateUI();
             });
 
             document.getElementById("btn-minus").addEventListener("click", () => {
                 if(isSpinning) return;
-                if(currentBet - 10 >= 10) currentBet -= 10;
-                else currentBet = 10;
+                if(currentBet - 2.00 >= 1.00) currentBet -= 2.00;
+                else currentBet = 1.00;
                 updateUI();
             });
 
@@ -342,13 +342,13 @@
                 btn.addEventListener("click", (e) => {
                     if(isSpinning) return;
                     let val = e.target.getAttribute("data-val");
-                    if (val === "MAX") currentBet = balance > 0 ? balance : 10;
+                    if (val === "MAX") currentBet = balance > 0 ? balance : 1.00;
                     else {
-                        val = parseInt(val);
+                        val = parseFloat(val);
                         if (val <= balance) currentBet = val;
                         else {
-                            alert("Saldo insuficiente para essa aposta.");
-                            currentBet = balance > 0 ? balance : 10;
+                            alert("Saldo insuficiente.");
+                            currentBet = balance > 0 ? balance : 1.00;
                         }
                     }
                     updateUI();
@@ -395,21 +395,36 @@
             }
 
             function getRiggedResult() {
-                let chanceOfWinning = 0;
-                if (balance < 50) chanceOfWinning = 0.5;
-                else if (balance < 200) chanceOfWinning = 0.2;
-                else chanceOfWinning = 0.05;
+                // Chance base conservadora para apostas mínimas (R$ 1 a R$ 5)
+                let baseChance = 0.18; 
 
-                const willWin = Math.random() < chanceOfWinning;
+                // Restrição severa por tamanho de aposta (Apostas altas viram armadilhas quase certas de perda)
+                if (currentBet > 5.00 && currentBet <= 20.00) {
+                    baseChance = 0.08;
+                } else if (currentBet > 20.00 && currentBet <= 100.00) {
+                    baseChance = 0.03; // Apenas 3% de chance de acerto
+                } else if (currentBet > 100.00) {
+                    baseChance = 0.01; // 1% de chance em apostas massivas (R$ 500)
+                }
+
+                // Restrição severa por crescimento de banca (Assim que o jogador lucra, a casa aperta o cerco)
+                if (balance > 300) baseChance *= 0.6;
+                if (balance > 1000) baseChance *= 0.3;
+                if (balance > 5000) baseChance *= 0.1; // Praticamente travado com saldo alto
+
+                const willWin = Math.random() < baseChance;
                 
                 let resultGrid = [];
                 if (willWin) {
-                    const winningSymbol = symbols[Math.floor(Math.random() * (symbols.length - 1))];
+                    // Mantém a tabela oficial intocada, sorteando um símbolo legítimo
+                    const winningSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+                    
                     for(let i = 0; i < 9; i++) {
                         if(i >= 3 && i <= 5) resultGrid.push(winningSymbol);
                         else resultGrid.push(symbols[Math.floor(Math.random() * symbols.length)]);
                     }
                 } else {
+                    // Grade perdedora garantida
                     for(let i = 0; i < 9; i++) {
                         resultGrid.push(symbols[Math.floor(Math.random() * symbols.length)]);
                     }
